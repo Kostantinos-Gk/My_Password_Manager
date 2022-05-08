@@ -3,7 +3,7 @@ from tkinter import *
 from Password import *
 from random import *
 import pyperclip
-
+import json
 # class StartPage(Frame):
 #     def __init__(self, parent, controller):
 #         Frame.__init__(self,parent)
@@ -39,8 +39,9 @@ class MyWindow:
         self.password_entry = Entry(width=50)
         self.password_generate_button = Button(text="Generate", width=12, command=self.generate_password)
         self.add_button = Button(text="Add", width=12, command=self.add_new_password_into_txt_file)
-        self.show_password_button = Button(text="Show", width=12)
+        self.show_password_button = Button(text="Search", width=12, command=self.find_password)
         self.clear_button = Button(text="Clear", width=12, command=self.clear_all_fields)
+        self.data = {}
 
         # Add Components in Grid
         self.my_canvas.create_image(100, 100, image=self.my_photo)
@@ -69,11 +70,31 @@ class MyWindow:
             new_entry.url = self.url_entry.get()
             new_entry.password = self.password_entry.get()
             new_entry.email = self.username_entry.get()
-            is_ok = messagebox.askokcancel(title=new_entry.application_name, message=f"These are the details entered:\nUser/Email: {new_entry.email}\nPassword: {new_entry.password}\nIs it ok to save it?")
+            new_data = {
+                new_entry.application_name: {
+                    "url": new_entry.url,
+                    "password": new_entry.password,
+                    "email": new_entry.email
+                }
+            }
 
+            is_ok = messagebox.askokcancel(title=new_entry.application_name, message=f"These are the details entered:\nUser/Email: {new_entry.email}\nPassword: {new_entry.password}\nIs it ok to save it?")
             if is_ok:
-                with open("mypasswords.txt", "a") as data_file:
-                    data_file.write(new_entry.display_app())
+                try:
+                    # First reading old data from json
+                    with open("mypasswords.json", "r") as data_file:
+                        data = json.load(data_file)
+                # If there is not this file, created
+                except FileNotFoundError:
+                    with open("mypasswords.json", "w") as data_file:
+                        json.dump(new_data, data_file, indent=4)
+                else:
+                    # Updating old data with new data, if file excists
+                    data.update(new_data)
+                    # Write new changes to file
+                    with open("mypasswords.json", "w") as data_file:
+                        json.dump(data, data_file, indent=4)
+
 
     def clear_all_fields(self):
         self.application_name_entry.delete(0, END)
@@ -101,3 +122,26 @@ class MyWindow:
 
         self.password_entry.insert(0,password)
         pyperclip.copy(password)
+
+    def find_password(self):
+        entry = Application()
+
+        application = self.application_name_entry.get()
+        print(application)
+
+        # First reading old data from json
+        try:
+            with open("mypasswords.json", "r") as data_file:
+                data = json.load(data_file)
+                entry.application_name = data[application]
+        except FileNotFoundError as error_message:
+            messagebox.showerror("Open File Error", f"File {error_message} does not exists")
+        except KeyError as key_error_message:
+            messagebox.showerror("Application does not exists", f"Application {key_error_message} does not exists")
+        else:
+            entry.email = data[application]["email"]
+            entry.url = data[application]["url"]
+            entry.password = data[application]["password"]
+            messagebox.showinfo(title=application, message=entry.display_app())
+
+

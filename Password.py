@@ -7,5 +7,6 @@ class Application:
         self.password = kw.get("password")
 
     def display_app(self):
-        return f"{self.application_name} | {self.url} | {self.email} | {self.password}\n"
+        return f" \n URL: {self.url} \n EMAIL : {self.email} \n PASSWORD : {self.password}"
+
 
